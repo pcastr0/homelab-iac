@@ -1,0 +1,6 @@
+- name: Proxmox VE 9 — Custom Desktop PC
+  hosts: proxmox_hosts
+  become: true
+  roles:
+    - proxmox-host
+  tags: [proxmox]

@@ -1,0 +1,29 @@
+---
+# bootstrap.yml — Phase 1 Bootstrap for Control Node
+- name: Bootstrap ThinkPad T480 Control Node
+  hosts: thinkpad-t480
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Print host info
+      debug:
+        msg: "Host: {{ ansible_hostname }} | OS: {{ ansible_distribution }} {{ ansible_distribution_version }} | IP: {{ ansible_default_ipv4.address }}"
+
+    - name: Ensure system packages are updated
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Verify Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Verify SSH service is running
+      service:
+        name: ssh
+        state: started
+        enabled: yes

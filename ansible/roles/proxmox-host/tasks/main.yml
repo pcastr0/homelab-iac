@@ -1,0 +1,88 @@
+---
+# proxmox-host role — Custom Desktop PC (10.0.10.11)
+
+- name: Disable Proxmox enterprise repo
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list.d/pve-enterprise.sources
+    regexp: 'Enabled: true'
+    replace: 'Enabled: false'
+    backup: yes
+  tags: [repos]
+#
+# - name: Add Proxmox no-subscription repo
+#   ansible.builtin.copy:
+#     dest: /etc/apt/sources.list.d/pve-no-subscription.sources
+#     content: |
+#       deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
+#     mode: '0644'
+#   tags: [repos]
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: dist
+    cache_valid_time: 3600
+  tags: [packages, updates]
+
+- name: Set system timezone
+  community.general.timezone:
+    name: '{{ proxmox_timezone }}'
+  tags: [system]
+
+- name: Harden SSH — key-only, no root
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: '0600'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart SSH
+  tags: [ssh, security]
+
+# - name: UFW — default deny incoming
+#   community.general.ufw:
+#     state: enabled
+#     default: deny
+#     direction: incoming
+#   tags: [firewall]
+
+# - name: UFW — allow SSH from VLAN 10 only
+#   community.general.ufw:
+#     rule: allow
+#     port: '22'
+#     proto: tcp
+#     src: '{{ proxmox_ssh_allowed_src }}'
+#   tags: [firewall]
+#
+# - name: UFW — allow Proxmox Web UI from VLAN 10
+#   community.general.ufw:
+#     rule: allow
+#     port: '8006'
+#     proto: tcp
+#     src: '{{ proxmox_ssh_allowed_src }}'
+#   tags: [firewall]
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name: [curl, wget, git, vim, htop, net-tools ]
+    state: present
+  tags: [packages]
+
+# - name: Enable and start fail2ban
+#   ansible.builtin.service:
+#     name: fail2ban
+#     state: started
+#     enabled: yes
+#   tags: [security]
+
+- name: Kernel hardening — sysctl
+  ansible.posix.sysctl:
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+    sysctl_set: yes
+    reload: yes
+  loop:
+    - { key: net.ipv4.tcp_syncookies,       value: '1' }
+    - { key: net.ipv4.conf.all.rp_filter,   value: '1' }
+    - { key: kernel.dmesg_restrict,         value: '1' }
+    - { key: kernel.kptr_restrict,          value: '2' }
+  tags: [sysctl, security]

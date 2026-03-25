@@ -1,0 +1,16 @@
+---
+# proxmox-host role defaults
+proxmox_node_name: goliath
+proxmox_mgmt_ip: 10.0.10.11
+proxmox_storage_vm: local-lvm
+proxmox_storage_os: local
+proxmox_backup_dest: 10.0.99.10
+
+# NTP — Asia/Manila (Philippines)
+proxmox_timezone: Asia/Manila
+proxmox_ntp_servers:
+  - 0.asia.pool.ntp.org
+  - 1.asia.pool.ntp.org
+
+# SSH — restrict to VLAN 10 only
+proxmox_ssh_allowed_src: '10.0.10.0/24'
